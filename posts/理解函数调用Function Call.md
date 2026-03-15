@@ -67,3 +67,45 @@ if (userQuestion.contains("订单") && userQuestion.contains("物流")){
 用一个完整的例子说明：
 场景：用户问“我还剩几天年假”
 第一轮：发送工具列表和用户问题
+你的代码构建一个请求，包含：
+- 用户问题：我还剩几天年假
+- 工具列表：getUserAnnualLeave（查询用户年假余额）
+发送给模型
+第一轮响应：模型输出调用意图
+模型分析用户问题，发现需要查年假余额，于是输出：
+```json
+{
+	"tool_calls": [
+		{
+			"id": "call_abc123",
+			"type": "function",
+			"function": {
+				"name": "getUserAnnualLeave",
+				"arguments": "{\"userId": \"12345\"}"
+			}
+		}
+	]
+}
+```
+注意模型并没有生成最终答案，而是告诉你需要调用getUserAnnualLeave函数
+你的代码执行函数
+你解析tool_calls, 发现要调getUserAnnualLeave，参数是userId=12345。你执行这个函数（可能是查数据库、调HR系统API），拿到结果：
+```json
+{
+	"remainingDays": 5,
+	"totalDays": 10,
+	"usedDays": 5
+}
+```
+第二轮：把结果返回给大模型
+你构建第二轮请求，包含：
+- 第一轮的用户问题
+- 第一轮的模型响应（带tool_calls）
+- 函数执行结果（上面的JSON）
+发送给模型。
+第二轮响应：模型生成最终答案
+模型基于函数执行结果，生成最终答案：
+```markdown
+您还剩5天年假（总共10天，已使用5天）
+```
+整个流程是一个多轮对话：第一轮模型输出调用意图，你执行函数，第二轮模型基于结果生成答案。
